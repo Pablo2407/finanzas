@@ -3,6 +3,8 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Usuario, Transaccion
 
+from flask_mail import Mail, Message
+
 from flask import send_file
 import openpyxl
 import io
@@ -11,6 +13,13 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///finanzas.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'clave_secreta_123'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'martinezmestrajuanpablo7@gmail.com'
+app.config['MAIL_PASSWORD'] = 'wxpf lxqu slti jidv'
+
+mail = Mail(app)
 
 db.init_app(app)
 login_manager = LoginManager()
@@ -28,6 +37,7 @@ with app.app_context():
 def registro():
     if request.method == 'POST':
         username = request.form['username'].strip()
+        email = request.form['email'].strip()
         password = request.form['password']
 
         if len(username) < 3:
@@ -42,9 +52,23 @@ def registro():
             flash('El usuario ya existe')
             return redirect(url_for('registro'))
 
-        nuevo = Usuario(username=username, password=generate_password_hash(password))
+        if Usuario.query.filter_by(email=email).first():
+            flash('El correo ya está registrado')
+            return redirect(url_for('registro'))
+
+        nuevo = Usuario(username=username, email=email, password=generate_password_hash(password))
         db.session.add(nuevo)
         db.session.commit()
+
+        try:
+            msg = Message('Bienvenido a Mis Finanzas',
+                sender=app.config['MAIL_USERNAME'],
+                recipients=[email])
+            msg.body = f'Hola {username}, tu cuenta fue creada exitosamente. ¡Bienvenido!'
+            mail.send(msg)
+        except:
+            pass
+
         flash('Cuenta creada exitosamente, inicia sesión')
         return redirect(url_for('login'))
     return render_template('registro.html')
