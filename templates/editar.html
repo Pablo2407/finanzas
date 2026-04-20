@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Transacción</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        form { background: #f9f9f9; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        input, select { width: 100%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+        button { background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
+        a { color: red; }
+    </style>
+</head>
+<body>
+    <h1>✏️ Editar Transacción</h1>
+
+    <form action="/editar/{{ transaccion.id }}" method="POST">
+        <input type="text" name="descripcion" value="{{ transaccion.descripcion }}" required>
+        <input type="number" name="monto" value="{{ transaccion.monto }}" step="0.01" required>
+        <select name="tipo">
+            <option value="ingreso" {% if transaccion.tipo == 'ingreso' %}selected{% endif %}>Ingreso</option>
+            <option value="gasto" {% if transaccion.tipo == 'gasto' %}selected{% endif %}>Gasto</option>
+        </select>
+        <select name="categoria">
+            <option value="comida" {% if transaccion.categoria == 'comida' %}selected{% endif %}>Comida</option>
+            <option value="transporte" {% if transaccion.categoria == 'transporte' %}selected{% endif %}>Transporte</option>
+            <option value="entretenimiento" {% if transaccion.categoria == 'entretenimiento' %}selected{% endif %}>Entretenimiento</option>
+            <option value="salud" {% if transaccion.categoria == 'salud' %}selected{% endif %}>Salud</option>
+            <option value="otros" {% if transaccion.categoria == 'otros' %}selected{% endif %}>Otros</option>
+        </select>
+        <button type="submit">Guardar cambios</button>
+    </form>
+
+    <a href="/">← Volver</a>
+</body>
+</html>
