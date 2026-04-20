@@ -27,14 +27,25 @@ with app.app_context():
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
     if request.method == 'POST':
-        username = request.form['username']
-        password = generate_password_hash(request.form['password'])
+        username = request.form['username'].strip()
+        password = request.form['password']
+
+        if len(username) < 3:
+            flash('El usuario debe tener al menos 3 caracteres')
+            return redirect(url_for('registro'))
+
+        if len(password) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres')
+            return redirect(url_for('registro'))
+
         if Usuario.query.filter_by(username=username).first():
             flash('El usuario ya existe')
             return redirect(url_for('registro'))
-        nuevo = Usuario(username=username, password=password)
+
+        nuevo = Usuario(username=username, password=generate_password_hash(password))
         db.session.add(nuevo)
         db.session.commit()
+        flash('Cuenta creada exitosamente, inicia sesión')
         return redirect(url_for('login'))
     return render_template('registro.html')
 
@@ -106,6 +117,9 @@ def agregar():
 @login_required
 def eliminar(id):
     transaccion = Transaccion.query.get_or_404(id)
+    if transaccion.usuario_id != current_user.id:
+        flash('No tienes permiso para eliminar esta transacción')
+        return redirect(url_for('index'))
     db.session.delete(transaccion)
     db.session.commit()
     return redirect(url_for('index'))
@@ -114,6 +128,9 @@ def eliminar(id):
 @login_required
 def editar(id):
     transaccion = Transaccion.query.get_or_404(id)
+    if transaccion.usuario_id != current_user.id:
+        flash('No tienes permiso para editar esta transacción')
+        return redirect(url_for('index'))
     if request.method == 'POST':
         transaccion.descripcion = request.form['descripcion']
         transaccion.monto = float(request.form['monto'])
