@@ -206,5 +206,52 @@ def exportar():
 
     return send_file(archivo, download_name='finanzas.xlsx', as_attachment=True, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
+@app.route('/perfil')
+@login_required
+def perfil():
+    return render_template('perfil.html')
+
+@app.route('/perfil/username', methods=['POST'])
+@login_required
+def cambiar_username():
+    username = request.form['username'].strip()
+
+    if len(username) < 3:
+        flash('El usuario debe tener al menos 3 caracteres', 'username')
+        return redirect(url_for('perfil'))
+
+    if Usuario.query.filter_by(username=username).first():
+        flash('Ese usuario ya existe', 'username')
+        return redirect(url_for('perfil'))
+
+    current_user.username = username
+    db.session.commit()
+    flash('Usuario actualizado exitosamente', 'username')
+    return redirect(url_for('perfil'))
+
+@app.route('/perfil/password', methods=['POST'])
+@login_required
+def cambiar_password():
+    password_actual = request.form['password_actual']
+    password_nuevo = request.form['password_nuevo']
+    password_confirmar = request.form['password_confirmar']
+
+    if not check_password_hash(current_user.password, password_actual):
+        flash('La contraseña actual es incorrecta', 'password')
+        return redirect(url_for('perfil'))
+
+    if len(password_nuevo) < 6:
+        flash('La nueva contraseña debe tener al menos 6 caracteres', 'password')
+        return redirect(url_for('perfil'))
+
+    if password_nuevo != password_confirmar:
+        flash('Las contraseñas no coinciden', 'password')
+        return redirect(url_for('perfil'))
+
+    current_user.password = generate_password_hash(password_nuevo)
+    db.session.commit()
+    flash('Contraseña actualizada exitosamente', 'password')
+    return redirect(url_for('perfil'))
+
 if __name__ == '__main__':
     app.run(debug=True)
