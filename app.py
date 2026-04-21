@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, Usuario, Transaccion
+from models import db, Usuario, Transaccion, Presupuesto
 
 from flask_mail import Mail, Message
 
@@ -252,6 +252,50 @@ def cambiar_password():
     db.session.commit()
     flash('Contraseña actualizada exitosamente', 'password')
     return redirect(url_for('perfil'))
+
+@app.route('/presupuesto')
+@login_required
+def presupuesto():
+    from datetime import datetime
+    mes_actual = datetime.now().strftime('%Y-%m')
+    presupuestos = Presupuesto.query.filter_by(usuario_id=current_user.id, mes=mes_actual).all()
+    transacciones = Transaccion.query.filter_by(usuario_id=current_user.id).all()
+
+    datos = []
+    categorias = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    for cat in categorias:
+        gastado = sum(t.monto for t in transacciones if t.tipo == 'gasto' and t.categoria == cat and t.fecha.strftime('%Y-%m') == mes_actual)
+        presupuesto_cat = next((p.monto for p in presupuestos if p.categoria == cat), 0)
+        porcentaje = (gastado / presupuesto_cat * 100) if presupuesto_cat > 0 else 0
+        datos.append({
+            'categoria': cat,
+            'presupuesto': presupuesto_cat,
+            'gastado': round(gastado, 2),
+            'porcentaje': min(round(porcentaje), 100),
+            'excedido': gastado > presupuesto_cat and presupuesto_cat > 0
+        })
+
+    return render_template('presupuesto.html', datos=datos, mes=mes_actual)
+
+@app.route('/presupuesto/guardar', methods=['POST'])
+@login_required
+def guardar_presupuesto():
+    from datetime import datetime
+    mes_actual = datetime.now().strftime('%Y-%m')
+    categorias = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+
+    for cat in categorias:
+        monto = request.form.get(cat, 0)
+        if monto:
+            existente = Presupuesto.query.filter_by(usuario_id=current_user.id, categoria=cat, mes=mes_actual).first()
+            if existente:
+                existente.monto = float(monto)
+            else:
+                nuevo = Presupuesto(categoria=cat, monto=float(monto), mes=mes_actual, usuario_id=current_user.id)
+                db.session.add(nuevo)
+
+    db.session.commit()
+    return redirect(url_for('presupuesto'))
 
 if __name__ == '__main__':
     app.run(debug=True)
