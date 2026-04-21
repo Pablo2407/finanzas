@@ -30,11 +30,12 @@
             <div class="d-flex flex-column flex-md-row gap-2 mt-2">
                 <span class="text-light">👤 {{ current_user.username }}</span>
                 <a href="/perfil" class="btn btn-outline-light btn-sm">👤 Perfil</a>
+                <a href="/resumen" class="btn btn-outline-light btn-sm">📅 Resumen</a>
+                <a href="/exportar" class="btn btn-outline-success btn-sm">📤 Excel</a>
                 <a href="/presupuesto" class="btn btn-outline-light btn-sm">💳 Presupuesto</a>
                 <a href="/graficas" class="btn btn-outline-light btn-sm">📈 Gráficas</a>
                 <a href="/categorias" class="btn btn-outline-light btn-sm">🏷️ Categorías</a>
-                <a href="/resumen" class="btn btn-outline-light btn-sm">📅 Resumen</a>
-                <a href="/exportar" class="btn btn-outline-success btn-sm">📤 Excel</a>
+                <a href="/recurrentes" class="btn btn-outline-light btn-sm">📆 Recurrentes</a>
                 <a href="/logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</a>
             </div>
         </div>
@@ -90,11 +91,14 @@
                 <div class="col-md-4">
                     <select name="categoria" class="form-control">
                         <option value="">Todas las categorías</option>
-                        <option value="comida" {% if filtro == 'comida' %}selected{% endif %}>Comida</option>
-                        <option value="transporte" {% if filtro == 'transporte' %}selected{% endif %}>Transporte</option>
-                        <option value="entretenimiento" {% if filtro == 'entretenimiento' %}selected{% endif %}>Entretenimiento</option>
-                        <option value="salud" {% if filtro == 'salud' %}selected{% endif %}>Salud</option>
-                        <option value="otros" {% if filtro == 'otros' %}selected{% endif %}>Otros</option>
+                        <option value="comida" {% if filtro == 'comida' %}selected{% endif %}>🍔 Comida</option>
+                        <option value="transporte" {% if filtro == 'transporte' %}selected{% endif %}>🚗 Transporte</option>
+                        <option value="entretenimiento" {% if filtro == 'entretenimiento' %}selected{% endif %}>🎮 Entretenimiento</option>
+                        <option value="salud" {% if filtro == 'salud' %}selected{% endif %}>💊 Salud</option>
+                        <option value="otros" {% if filtro == 'otros' %}selected{% endif %}>🏷️ Otros</option>
+                        {% for cat in categorias_personalizadas %}
+                        <option value="{{ cat.nombre }}" {% if filtro == cat.nombre %}selected{% endif %}>{{ cat.icono }} {{ cat.nombre }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -120,16 +124,16 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for t in transacciones %}
+                    {% for trans in transacciones %}
                     <tr>
-                        <td>{{ t.descripcion }}</td>
-                        <td class="{{ t.tipo }}">${{ t.monto }}</td>
-                        <td>{{ t.tipo }}</td>
-                        <td>{{ t.categoria }}</td>
-                        <td>{{ t.fecha.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ trans.descripcion }}</td>
+                        <td class="{{ trans.tipo }}">${{ trans.monto }}</td>
+                        <td>{{ trans.tipo }}</td>
+                        <td>{{ trans.categoria }}</td>
+                        <td>{{ trans.fecha.strftime('%d/%m/%Y') }}</td>
                         <td>
-                            <a href="/editar/{{ t.id }}" class="btn btn-outline-light btn-sm">✏️</a>
-                            <a href="/eliminar/{{ t.id }}" onclick="return confirm('¿Seguro?')" class="btn btn-outline-danger btn-sm">🗑️</a>
+                            <a href="/editar/{{ trans.id }}" class="btn btn-outline-light btn-sm">✏️</a>
+                            <a href="/eliminar/{{ trans.id }}" onclick="return confirm('¿Seguro que quieres eliminar?')" class="btn btn-outline-danger btn-sm">🗑️</a>
                         </td>
                     </tr>
                     {% endfor %}

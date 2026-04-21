@@ -8,6 +8,7 @@ class Usuario(db.Model, UserMixin):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    idioma = db.Column(db.String(5), default='es')
     transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
 
 class Transaccion(db.Model):
@@ -30,4 +31,13 @@ class Categoria(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(50), nullable=False)
     icono = db.Column(db.String(10), default='🏷️')
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+
+class Recurrente(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    descripcion = db.Column(db.String(100), nullable=False)
+    monto = db.Column(db.Float, nullable=False)
+    tipo = db.Column(db.String(10), nullable=False)
+    categoria = db.Column(db.String(50))
+    dia = db.Column(db.Integer, nullable=False)  # dia del mes que se repite
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)

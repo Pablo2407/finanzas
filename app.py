@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, Usuario, Transaccion, Presupuesto, Categoria
+from models import db, Usuario, Transaccion, Presupuesto, Categoria, Recurrente
 from itsdangerous import URLSafeTimedSerializer
+
 
 from flask_mail import Mail, Message
 
@@ -27,6 +28,8 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'landing'
+
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -472,6 +475,78 @@ def eliminar_categoria(id):
     db.session.delete(categoria)
     db.session.commit()
     return redirect(url_for('categorias'))
+
+@app.route('/idioma/<lang>')
+@login_required
+def cambiar_idioma(lang):
+    if lang in ['es', 'en']:
+        current_user.idioma = lang
+        db.session.commit()
+    return redirect(request.referrer or url_for('index'))
+
+@app.route('/recurrentes')
+@login_required
+def recurrentes():
+    recurrentes = Recurrente.query.filter_by(usuario_id=current_user.id).all()
+    return render_template('recurrentes.html', recurrentes=recurrentes)
+
+@app.route('/recurrentes/agregar', methods=['POST'])
+@login_required
+def agregar_recurrente():
+    nueva = Recurrente(
+        descripcion=request.form['descripcion'],
+        monto=float(request.form['monto']),
+        tipo=request.form['tipo'],
+        categoria=request.form['categoria'],
+        dia=int(request.form['dia']),
+        usuario_id=current_user.id
+    )
+    db.session.add(nueva)
+    db.session.commit()
+    return redirect(url_for('recurrentes'))
+
+@app.route('/recurrentes/eliminar/<int:id>')
+@login_required
+def eliminar_recurrente(id):
+    recurrente = Recurrente.query.get_or_404(id)
+    if recurrente.usuario_id != current_user.id:
+        return redirect(url_for('recurrentes'))
+    db.session.delete(recurrente)
+    db.session.commit()
+    return redirect(url_for('recurrentes'))
+
+@app.route('/recurrentes/procesar')
+@login_required
+def procesar_recurrentes():
+    from datetime import datetime
+    hoy = datetime.now()
+    recurrentes = Recurrente.query.filter_by(usuario_id=current_user.id).all()
+    agregadas = 0
+
+    for r in recurrentes:
+        if r.dia == hoy.day:
+            ya_existe = Transaccion.query.filter_by(
+                usuario_id=current_user.id,
+                descripcion=r.descripcion,
+                monto=r.monto
+            ).filter(
+                db.func.strftime('%Y-%m-%d', Transaccion.fecha) == hoy.strftime('%Y-%m-%d')
+            ).first()
+
+            if not ya_existe:
+                nueva = Transaccion(
+                    descripcion=r.descripcion,
+                    monto=r.monto,
+                    tipo=r.tipo,
+                    categoria=r.categoria,
+                    usuario_id=current_user.id
+                )
+                db.session.add(nueva)
+                agregadas += 1
+
+    db.session.commit()
+    flash(f'{agregadas} transacciones recurrentes procesadas')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
