@@ -43,10 +43,34 @@
 
     <div class="container">
         <div class="row mb-4">
-            <div class="col-12">
+            <div class="col-12 mb-3">
                 <div class="card balance-card text-center p-4">
                     <h6 class="text-light opacity-75">Balance Total</h6>
                     <h1 class="fw-bold text-white">${{ balance }}</h1>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card p-3 text-center">
+                    <h6 class="text-secondary">💰 Ingresos del mes</h6>
+                    <h4 class="ingreso">${{ ingresos_mes }}</h4>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card p-3 text-center">
+                    <h6 class="text-secondary">💸 Gastos del mes</h6>
+                    <h4 class="gasto">${{ gastos_mes }}</h4>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card p-3 text-center">
+                    <h6 class="text-secondary">🔢 Transacciones</h6>
+                    <h4 class="text-white">{{ num_transacciones }}</h4>
+                </div>
+            </div>
+            <div class="col-6 col-md-3 mb-3">
+                <div class="card p-3 text-center">
+                    <h6 class="text-secondary">📈 Mayor gasto</h6>
+                    <h4 class="gasto">${{ mayor_gasto }}</h4>
                 </div>
             </div>
         </div>

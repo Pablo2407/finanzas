@@ -101,6 +101,53 @@ def logout():
 @app.route('/')
 @login_required
 def index():
+    from datetime import datetime
+    categoria_filtro = request.args.get('categoria', '')
+    fecha_filtro = request.args.get('fecha', '')
+
+    query = Transaccion.query.filter_by(usuario_id=current_user.id)
+
+    if categoria_filtro:
+        query = query.filter_by(categoria=categoria_filtro)
+
+    if fecha_filtro:
+        fecha = datetime.strptime(fecha_filtro, '%Y-%m-%d')
+        query = query.filter(db.func.date(Transaccion.fecha) == fecha.date())
+
+    transacciones = query.order_by(Transaccion.fecha.desc()).all()
+    todas = Transaccion.query.filter_by(usuario_id=current_user.id).all()
+
+    # Balance general
+    ingresos_total = sum(t.monto for t in todas if t.tipo == 'ingreso')
+    gastos_total = sum(t.monto for t in todas if t.tipo == 'gasto')
+    balance = ingresos_total - gastos_total
+
+    # Stats del mes actual
+    mes_actual = datetime.now().strftime('%Y-%m')
+    transacciones_mes = [t for t in todas if t.fecha.strftime('%Y-%m') == mes_actual]
+    ingresos_mes = sum(t.monto for t in transacciones_mes if t.tipo == 'ingreso')
+    gastos_mes = sum(t.monto for t in transacciones_mes if t.tipo == 'gasto')
+    num_transacciones = len(transacciones_mes)
+    mayor_gasto = max((t.monto for t in transacciones_mes if t.tipo == 'gasto'), default=0)
+
+    categorias_base = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    categorias_personalizadas = Categoria.query.filter_by(usuario_id=current_user.id).all()
+    categorias_lista = categorias_base + [c.nombre for c in categorias_personalizadas]
+    montos_lista = [sum(t.monto for t in todas if t.tipo == 'gasto' and t.categoria == cat) for cat in categorias_lista]
+
+    return render_template('index.html',
+        transacciones=transacciones,
+        balance=round(balance, 2),
+        categorias=categorias_lista,
+        montos=montos_lista,
+        filtro=categoria_filtro,
+        fecha_filtro=fecha_filtro,
+        categorias_personalizadas=categorias_personalizadas,
+        ingresos_mes=round(ingresos_mes, 2),
+        gastos_mes=round(gastos_mes, 2),
+        num_transacciones=num_transacciones,
+        mayor_gasto=round(mayor_gasto, 2)
+    )
     categoria_filtro = request.args.get('categoria', '')
     fecha_filtro = request.args.get('fecha', '')
 
