@@ -132,6 +132,7 @@ def index():
 @app.route('/agregar', methods=['POST'])
 @login_required
 def agregar():
+    from datetime import datetime
     nueva = Transaccion(
         descripcion=request.form['descripcion'],
         monto=float(request.form['monto']),
@@ -141,6 +142,44 @@ def agregar():
     )
     db.session.add(nueva)
     db.session.commit()
+
+    # Verificar presupuesto
+    if nueva.tipo == 'gasto':
+        mes_actual = datetime.now().strftime('%Y-%m')
+        presupuesto = Presupuesto.query.filter_by(
+            usuario_id=current_user.id,
+            categoria=nueva.categoria,
+            mes=mes_actual
+        ).first()
+
+        if presupuesto and presupuesto.monto > 0:
+            transacciones = Transaccion.query.filter_by(
+                usuario_id=current_user.id,
+                categoria=nueva.categoria
+            ).all()
+            gastado = sum(t.monto for t in transacciones if t.tipo == 'gasto' and t.fecha.strftime('%Y-%m') == mes_actual)
+            porcentaje = (gastado / presupuesto.monto) * 100
+
+            if porcentaje >= 80:
+                try:
+                    msg = Message('⚠️ Alerta de presupuesto',
+                        sender=app.config['MAIL_USERNAME'],
+                        recipients=[current_user.email])
+                    msg.body = f'''Hola {current_user.username},
+
+Has usado el {round(porcentaje)}% de tu presupuesto de {nueva.categoria}.
+
+Presupuesto: ${presupuesto.monto}
+Gastado: ${round(gastado, 2)}
+Disponible: ${round(presupuesto.monto - gastado, 2)}
+
+¡Ten cuidado con tus gastos!
+
+- Mis Finanzas'''
+                    mail.send(msg)
+                except:
+                    pass
+
     return redirect(url_for('index'))
 
 @app.route('/eliminar/<int:id>')
