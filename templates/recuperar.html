@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar Sesión</title>
+    <title>Recuperar contraseña</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #1a1a2e; color: #eee; display: flex; justify-content: center; align-items: center; height: 100vh; }
@@ -15,19 +15,17 @@
 <body>
     <div class="card p-4">
         <h2 class="text-center mb-1">💰 Mis Finanzas</h2>
-        <p class="text-center text-secondary mb-4">Inicia sesión para continuar</p>
+        <p class="text-center text-secondary mb-4">Recuperar contraseña</p>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <div class="alert alert-danger">{{ messages[0] }}</div>
+                <div class="alert alert-info">{{ messages[0] }}</div>
             {% endif %}
         {% endwith %}
-        <form action="/login" method="POST">
-            <input type="text" name="username" class="form-control mb-3" placeholder="Usuario" required>
-            <input type="password" name="password" class="form-control mb-3" placeholder="Contraseña" required>
-            <button type="submit" class="btn btn-success w-100">Entrar</button>
+        <form action="/recuperar" method="POST">
+            <input type="email" name="email" class="form-control mb-3" placeholder="Tu correo electrónico" required>
+            <button type="submit" class="btn btn-success w-100">Enviar enlace</button>
         </form>
-        <p class="text-center mt-3">¿No tienes cuenta? <a href="/registro" class="text-success">Regístrate aquí</a></p>
-        <p class="text-center">¿Olvidaste tu contraseña? <a href="/recuperar" class="text-success">Recupérala aquí</a></p>
+        <p class="text-center mt-3"><a href="/login" class="text-success">← Volver al login</a></p>
     </div>
 </body>
 </html>

@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Usuario, Transaccion, Presupuesto
+from itsdangerous import URLSafeTimedSerializer
 
 from flask_mail import Mail, Message
 
@@ -13,6 +14,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///finanzas.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'clave_secreta_123'
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
@@ -296,6 +298,54 @@ def guardar_presupuesto():
 
     db.session.commit()
     return redirect(url_for('presupuesto'))
+
+@app.route('/recuperar', methods=['GET', 'POST'])
+def recuperar():
+    if request.method == 'POST':
+        email = request.form['email'].strip()
+        usuario = Usuario.query.filter_by(email=email).first()
+        if usuario:
+            token = serializer.dumps(email, salt='recuperar-password')
+            enlace = url_for('restablecer', token=token, _external=True)
+            try:
+                msg = Message('Recuperar contraseña',
+                    sender=app.config['MAIL_USERNAME'],
+                    recipients=[email])
+                msg.body = f'Hola {usuario.username}, haz clic en este enlace para restablecer tu contraseña:\n\n{enlace}\n\nEste enlace expira en 30 minutos.'
+                mail.send(msg)
+            except:
+                pass
+        flash('Si el correo existe recibirás un enlace para restablecer tu contraseña')
+        return redirect(url_for('login'))
+    return render_template('recuperar.html')
+
+@app.route('/restablecer/<token>', methods=['GET', 'POST'])
+def restablecer(token):
+    try:
+        email = serializer.loads(token, salt='recuperar-password', max_age=1800)
+    except:
+        flash('El enlace ha expirado o no es válido')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        password = request.form['password']
+        confirmar = request.form['confirmar']
+
+        if len(password) < 6:
+            flash('La contraseña debe tener al menos 6 caracteres')
+            return redirect(url_for('restablecer', token=token))
+
+        if password != confirmar:
+            flash('Las contraseñas no coinciden')
+            return redirect(url_for('restablecer', token=token))
+
+        usuario = Usuario.query.filter_by(email=email).first()
+        usuario.password = generate_password_hash(password)
+        db.session.commit()
+        flash('Contraseña restablecida exitosamente')
+        return redirect(url_for('login'))
+
+    return render_template('restablecer.html', token=token)
 
 if __name__ == '__main__':
     app.run(debug=True)
