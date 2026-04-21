@@ -25,3 +25,9 @@ class Presupuesto(db.Model):
     monto = db.Column(db.Float, nullable=False)
     mes = db.Column(db.String(7), nullable=False)  # formato: 2026-04
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+
+class Categoria(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(50), nullable=False)
+    icono = db.Column(db.String(10), default='🏷️')
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)

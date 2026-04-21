@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, Usuario, Transaccion, Presupuesto
+from models import db, Usuario, Transaccion, Presupuesto, Categoria
 from itsdangerous import URLSafeTimedSerializer
 
 from flask_mail import Mail, Message
@@ -117,7 +117,9 @@ def index():
     gastos = sum(t.monto for t in transacciones if t.tipo == 'gasto')
     balance = ingresos - gastos
 
-    categorias_lista = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    categorias_base = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    categorias_personalizadas = Categoria.query.filter_by(usuario_id=current_user.id).all()
+    categorias_lista = categorias_base + [c.nombre for c in categorias_personalizadas]
     montos_lista = [sum(t.monto for t in transacciones if t.tipo == 'gasto' and t.categoria == cat) for cat in categorias_lista]
 
     return render_template('index.html',
@@ -126,7 +128,8 @@ def index():
         categorias=categorias_lista,
         montos=montos_lista,
         filtro=categoria_filtro,
-        fecha_filtro=fecha_filtro
+        fecha_filtro=fecha_filtro,
+        categorias_personalizadas=categorias_personalizadas
     )
 
 @app.route('/agregar', methods=['POST'])
@@ -323,7 +326,9 @@ def presupuesto():
 def guardar_presupuesto():
     from datetime import datetime
     mes_actual = datetime.now().strftime('%Y-%m')
-    categorias = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    categorias_base = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    categorias_personalizadas = Categoria.query.filter_by(usuario_id=current_user.id).all()
+    categorias_lista = categorias_base + [c.nombre for c in categorias_personalizadas]
 
     for cat in categorias:
         monto = request.form.get(cat, 0)
@@ -432,6 +437,41 @@ def graficas():
         balances=balances,
         fechas=fechas
     )
+
+@app.route('/categorias')
+@login_required
+def categorias():
+    categorias = Categoria.query.filter_by(usuario_id=current_user.id).all()
+    return render_template('categorias.html', categorias=categorias)
+
+@app.route('/categorias/agregar', methods=['POST'])
+@login_required
+def agregar_categoria():
+    nombre = request.form['nombre'].strip()
+    icono = request.form['icono'].strip()
+
+    if len(nombre) < 2:
+        flash('El nombre debe tener al menos 2 caracteres')
+        return redirect(url_for('categorias'))
+
+    if Categoria.query.filter_by(usuario_id=current_user.id, nombre=nombre).first():
+        flash('Ya tienes una categoría con ese nombre')
+        return redirect(url_for('categorias'))
+
+    nueva = Categoria(nombre=nombre, icono=icono, usuario_id=current_user.id)
+    db.session.add(nueva)
+    db.session.commit()
+    return redirect(url_for('categorias'))
+
+@app.route('/categorias/eliminar/<int:id>')
+@login_required
+def eliminar_categoria(id):
+    categoria = Categoria.query.get_or_404(id)
+    if categoria.usuario_id != current_user.id:
+        return redirect(url_for('categorias'))
+    db.session.delete(categoria)
+    db.session.commit()
+    return redirect(url_for('categorias'))
 
 if __name__ == '__main__':
     app.run(debug=True)

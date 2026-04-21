@@ -32,6 +32,7 @@
                 <a href="/perfil" class="btn btn-outline-light btn-sm">👤 Perfil</a>
                 <a href="/presupuesto" class="btn btn-outline-light btn-sm">💳 Presupuesto</a>
                 <a href="/graficas" class="btn btn-outline-light btn-sm">📈 Gráficas</a>
+                <a href="/categorias" class="btn btn-outline-light btn-sm">🏷️ Categorías</a>
                 <a href="/resumen" class="btn btn-outline-light btn-sm">📅 Resumen</a>
                 <a href="/exportar" class="btn btn-outline-success btn-sm">📤 Excel</a>
                 <a href="/logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</a>
@@ -61,11 +62,14 @@
                             <option value="gasto">Gasto</option>
                         </select>
                         <select name="categoria" class="form-control mb-3">
-                            <option value="comida">Comida</option>
-                            <option value="transporte">Transporte</option>
-                            <option value="entretenimiento">Entretenimiento</option>
-                            <option value="salud">Salud</option>
-                            <option value="otros">Otros</option>
+                            <option value="comida">🍔 Comida</option>
+                            <option value="transporte">🚗 Transporte</option>
+                            <option value="entretenimiento">🎮 Entretenimiento</option>
+                            <option value="salud">💊 Salud</option>
+                            <option value="otros">🏷️ Otros</option>
+                            {% for cat in categorias_personalizadas %}
+                            <option value="{{ cat.nombre }}">{{ cat.icono }} {{ cat.nombre }}</option>
+                            {% endfor %}
                         </select>
                         <button type="submit" class="btn btn-success w-100">Agregar</button>
                     </form>

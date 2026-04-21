@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Categorías</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #1a1a2e; color: #eee; }
+        .navbar { background-color: #16213e; }
+        .card { background-color: #16213e; border: 1px solid #0f3460; color: #eee; }
+        input { background-color: #0f3460 !important; color: #eee !important; border: 1px solid #533483 !important; }
+        input::placeholder { color: #aaa !important; }
+        .categoria-item { background-color: #0f3460; border-radius: 10px; padding: 12px 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark px-3 py-3 mb-4">
+        <span class="navbar-brand fw-bold fs-5">💰 Mis Finanzas</span>
+        <a href="/" class="btn btn-outline-light btn-sm">← Volver</a>
+    </nav>
+
+    <div class="container" style="max-width: 600px;">
+        <h3 class="mb-4">🏷️ Mis Categorías</h3>
+
+        <div class="card p-4 mb-4">
+            <h5 class="mb-3">Agregar nueva categoría</h5>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alert alert-danger">{{ messages[0] }}</div>
+                {% endif %}
+            {% endwith %}
+            <form action="/categorias/agregar" method="POST">
+                <div class="row g-2">
+                    <div class="col-8">
+                        <input type="text" name="nombre" class="form-control" placeholder="Nombre de la categoría" required>
+                    </div>
+                    <div class="col-4">
+                        <input type="text" name="icono" class="form-control" placeholder="Icono 🏷️" maxlength="2">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success w-100 mt-3">Agregar categoría</button>
+            </form>
+        </div>
+
+        <div class="card p-4">
+            <h5 class="mb-3">Categorías predeterminadas</h5>
+            <div class="categoria-item">🍔 <span>Comida</span> <span class="text-secondary">Predeterminada</span></div>
+            <div class="categoria-item">🚗 <span>Transporte</span> <span class="text-secondary">Predeterminada</span></div>
+            <div class="categoria-item">🎮 <span>Entretenimiento</span> <span class="text-secondary">Predeterminada</span></div>
+            <div class="categoria-item">💊 <span>Salud</span> <span class="text-secondary">Predeterminada</span></div>
+            <div class="categoria-item">🏷️ <span>Otros</span> <span class="text-secondary">Predeterminada</span></div>
+
+            {% if categorias %}
+            <h5 class="mt-4 mb-3">Mis categorías personalizadas</h5>
+            {% for cat in categorias %}
+            <div class="categoria-item">
+                <span>{{ cat.icono }} {{ cat.nombre }}</span>
+                <a href="/categorias/eliminar/{{ cat.id }}" onclick="return confirm('¿Eliminar categoría?')" class="btn btn-outline-danger btn-sm">🗑️</a>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
