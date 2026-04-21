@@ -595,5 +595,41 @@ def procesar_recurrentes():
     flash(f'{agregadas} transacciones recurrentes procesadas')
     return redirect(url_for('index'))
 
+@app.route('/buscar')
+@login_required
+def buscar():
+    query_texto = request.args.get('q', '')
+    fecha_inicio = request.args.get('fecha_inicio', '')
+    fecha_fin = request.args.get('fecha_fin', '')
+    tipo_filtro = request.args.get('tipo', '')
+
+    query = Transaccion.query.filter_by(usuario_id=current_user.id)
+
+    if query_texto:
+        query = query.filter(Transaccion.descripcion.ilike(f'%{query_texto}%'))
+
+    if tipo_filtro:
+        query = query.filter_by(tipo=tipo_filtro)
+
+    if fecha_inicio:
+        from datetime import datetime
+        query = query.filter(Transaccion.fecha >= datetime.strptime(fecha_inicio, '%Y-%m-%d'))
+
+    if fecha_fin:
+        from datetime import datetime
+        query = query.filter(Transaccion.fecha <= datetime.strptime(fecha_fin, '%Y-%m-%d'))
+
+    resultados = query.order_by(Transaccion.fecha.desc()).all()
+    total = sum(t.monto if t.tipo == 'ingreso' else -t.monto for t in resultados)
+
+    return render_template('buscar.html',
+        resultados=resultados,
+        total=round(total, 2),
+        q=query_texto,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        tipo_filtro=tipo_filtro
+    )
+
 if __name__ == '__main__':
     app.run(debug=True)
