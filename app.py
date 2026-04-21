@@ -24,7 +24,7 @@ mail = Mail(app)
 db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'landing'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -32,6 +32,10 @@ def load_user(user_id):
 
 with app.app_context():
     db.create_all()
+
+@app.route('/landing')
+def landing():
+    return render_template('landing.html')
 
 @app.route('/registro', methods=['GET', 'POST'])
 def registro():
