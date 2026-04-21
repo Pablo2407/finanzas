@@ -347,5 +347,52 @@ def restablecer(token):
 
     return render_template('restablecer.html', token=token)
 
+@app.route('/graficas')
+@login_required
+def graficas():
+    from datetime import datetime
+    transacciones = Transaccion.query.filter_by(usuario_id=current_user.id).order_by(Transaccion.fecha).all()
+
+    # Ingresos y gastos por mes
+    datos_meses = {}
+    for t in transacciones:
+        mes = t.fecha.strftime('%Y-%m')
+        if mes not in datos_meses:
+            datos_meses[mes] = {'ingresos': 0, 'gastos': 0}
+        if t.tipo == 'ingreso':
+            datos_meses[mes]['ingresos'] += t.monto
+        else:
+            datos_meses[mes]['gastos'] += t.monto
+
+    meses = sorted(datos_meses.keys())
+    ingresos = [datos_meses[m]['ingresos'] for m in meses]
+    gastos = [datos_meses[m]['gastos'] for m in meses]
+
+    # Gastos por categoria
+    categorias_lista = ['comida', 'transporte', 'entretenimiento', 'salud', 'otros']
+    montos_categorias = [sum(t.monto for t in transacciones if t.tipo == 'gasto' and t.categoria == cat) for cat in categorias_lista]
+
+    # Evolucion del balance
+    balance = 0
+    balances = []
+    fechas = []
+    for t in transacciones:
+        if t.tipo == 'ingreso':
+            balance += t.monto
+        else:
+            balance -= t.monto
+        balances.append(round(balance, 2))
+        fechas.append(t.fecha.strftime('%d/%m/%Y'))
+
+    return render_template('graficas.html',
+        meses=meses,
+        ingresos=ingresos,
+        gastos=gastos,
+        categorias=categorias_lista,
+        montos_categorias=montos_categorias,
+        balances=balances,
+        fechas=fechas
+    )
+
 if __name__ == '__main__':
     app.run(debug=True)
