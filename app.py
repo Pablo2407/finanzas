@@ -3,6 +3,10 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import db, Usuario, Transaccion, Presupuesto, Categoria, Recurrente, Meta
 from itsdangerous import URLSafeTimedSerializer
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
 
 
 from flask_mail import Mail, Message
@@ -674,6 +678,77 @@ def eliminar_meta(id):
     db.session.delete(meta)
     db.session.commit()
     return redirect(url_for('metas'))
+
+@app.route('/reporte')
+@login_required
+def reporte():
+    from datetime import datetime
+    import io
+
+    transacciones = Transaccion.query.filter_by(usuario_id=current_user.id).order_by(Transaccion.fecha.desc()).all()
+    ingresos = sum(t.monto for t in transacciones if t.tipo == 'ingreso')
+    gastos = sum(t.monto for t in transacciones if t.tipo == 'gasto')
+    balance = ingresos - gastos
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elementos = []
+
+    # Título
+    elementos.append(Paragraph('Reporte de Finanzas Personales', styles['Title']))
+    elementos.append(Paragraph(f'Usuario: {current_user.username}', styles['Normal']))
+    elementos.append(Paragraph(f'Fecha: {datetime.now().strftime("%d/%m/%Y")}', styles['Normal']))
+    elementos.append(Spacer(1, 20))
+
+    # Resumen
+    elementos.append(Paragraph('Resumen General', styles['Heading2']))
+    resumen_data = [
+        ['Concepto', 'Monto'],
+        ['Total Ingresos', f'${round(ingresos, 2)}'],
+        ['Total Gastos', f'${round(gastos, 2)}'],
+        ['Balance', f'${round(balance, 2)}'],
+    ]
+    tabla_resumen = Table(resumen_data, colWidths=[300, 150])
+    tabla_resumen.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4CAF50')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+    ]))
+    elementos.append(tabla_resumen)
+    elementos.append(Spacer(1, 20))
+
+    # Historial
+    elementos.append(Paragraph('Historial de Transacciones', styles['Heading2']))
+    datos = [['Descripción', 'Monto', 'Tipo', 'Categoría', 'Fecha']]
+    for t in transacciones:
+        datos.append([
+            t.descripcion,
+            f'${t.monto}',
+            t.tipo,
+            t.categoria,
+            t.fecha.strftime('%d/%m/%Y')
+        ])
+
+    tabla = Table(datos, colWidths=[150, 80, 70, 100, 80])
+    tabla.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#4CAF50')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+    ]))
+    elementos.append(tabla)
+
+    doc.build(elementos)
+    buffer.seek(0)
+
+    return send_file(buffer, download_name=f'reporte_{datetime.now().strftime("%Y%m%d")}.pdf', as_attachment=True, mimetype='application/pdf')
 
 if __name__ == '__main__':
     app.run(debug=True)
