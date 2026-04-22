@@ -19,8 +19,8 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///finanzas.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'clave_secreta_123'
-app.config['VAPID_PUBLIC_KEY'] = 'wxpf lxqu slti jidv'
-app.config['VAPID_PRIVATE_KEY'] = 'wxpf lxqu slti jidv'
+app.config['VAPID_PUBLIC_KEY'] = '0x000001D2308BF450'
+app.config['VAPID_PRIVATE_KEY'] = '0x000001D2302E5C50'
 app.config['VAPID_CLAIM_EMAIL'] = 'martinezmestrajuanpablo7@gmail.com'
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -769,35 +769,7 @@ def moneda():
         return redirect(url_for('index'))
     return render_template('moneda.html')
 
-@app.route('/suscribir', methods=['POST'])
-@login_required
-def suscribir():
-    import json
-    suscripcion = request.json
-    current_user.push_suscripcion = json.dumps(suscripcion)
-    db.session.commit()
-    return jsonify({'status': 'ok'})
 
-@app.route('/notificacion/test')
-@login_required
-def notificacion_test():
-    import json
-    from pywebpush import webpush, WebPushException
-    if current_user.push_suscripcion:
-        try:
-            webpush(
-                subscription_info=json.loads(current_user.push_suscripcion),
-                data=json.dumps({
-                    'title': '💰 Mis Finanzas',
-                    'body': '¡Las notificaciones push funcionan!'
-                }),
-                vapid_private_key=app.config['VAPID_PRIVATE_KEY'],
-                vapid_claims={'sub': f"mailto:{app.config['VAPID_CLAIM_EMAIL']}"}
-            )
-            flash('Notificación enviada exitosamente')
-        except WebPushException as e:
-            flash(f'Error: {str(e)}')
-    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(debug=True)
