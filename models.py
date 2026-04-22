@@ -41,3 +41,12 @@ class Recurrente(db.Model):
     categoria = db.Column(db.String(50))
     dia = db.Column(db.Integer, nullable=False)  # dia del mes que se repite
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+
+class Meta(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    monto_objetivo = db.Column(db.Float, nullable=False)
+    monto_actual = db.Column(db.Float, default=0)
+    fecha_limite = db.Column(db.DateTime, nullable=True)
+    completada = db.Column(db.Boolean, default=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)

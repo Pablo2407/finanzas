@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import db, Usuario, Transaccion, Presupuesto, Categoria, Recurrente
+from models import db, Usuario, Transaccion, Presupuesto, Categoria, Recurrente, Meta
 from itsdangerous import URLSafeTimedSerializer
 
 
@@ -630,6 +630,50 @@ def buscar():
         fecha_fin=fecha_fin,
         tipo_filtro=tipo_filtro
     )
+
+@app.route('/metas')
+@login_required
+def metas():
+    metas = Meta.query.filter_by(usuario_id=current_user.id).all()
+    return render_template('metas.html', metas=metas)
+
+@app.route('/metas/agregar', methods=['POST'])
+@login_required
+def agregar_meta():
+    from datetime import datetime
+    fecha_limite = request.form.get('fecha_limite')
+    nueva = Meta(
+        nombre=request.form['nombre'],
+        monto_objetivo=float(request.form['monto_objetivo']),
+        fecha_limite=datetime.strptime(fecha_limite, '%Y-%m-%d') if fecha_limite else None,
+        usuario_id=current_user.id
+    )
+    db.session.add(nueva)
+    db.session.commit()
+    return redirect(url_for('metas'))
+
+@app.route('/metas/abonar/<int:id>', methods=['POST'])
+@login_required
+def abonar_meta(id):
+    meta = Meta.query.get_or_404(id)
+    if meta.usuario_id != current_user.id:
+        return redirect(url_for('metas'))
+    monto = float(request.form['monto'])
+    meta.monto_actual += monto
+    if meta.monto_actual >= meta.monto_objetivo:
+        meta.completada = True
+    db.session.commit()
+    return redirect(url_for('metas'))
+
+@app.route('/metas/eliminar/<int:id>')
+@login_required
+def eliminar_meta(id):
+    meta = Meta.query.get_or_404(id)
+    if meta.usuario_id != current_user.id:
+        return redirect(url_for('metas'))
+    db.session.delete(meta)
+    db.session.commit()
+    return redirect(url_for('metas'))
 
 if __name__ == '__main__':
     app.run(debug=True)
