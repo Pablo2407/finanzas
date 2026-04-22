@@ -33,6 +33,12 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'landing'
 
+@app.context_processor
+def inject_moneda():
+    if current_user and current_user.is_authenticated:
+        return dict(moneda=current_user.moneda)
+    return dict(moneda='$')
+
 
 
 @login_manager.user_loader
@@ -749,6 +755,16 @@ def reporte():
     buffer.seek(0)
 
     return send_file(buffer, download_name=f'reporte_{datetime.now().strftime("%Y%m%d")}.pdf', as_attachment=True, mimetype='application/pdf')
+
+@app.route('/moneda', methods=['GET', 'POST'])
+@login_required
+def moneda():
+    if request.method == 'POST':
+        current_user.moneda = request.form['moneda']
+        db.session.commit()
+        flash('Moneda actualizada exitosamente')
+        return redirect(url_for('index'))
+    return render_template('moneda.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

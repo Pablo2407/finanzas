@@ -9,6 +9,7 @@ class Usuario(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     idioma = db.Column(db.String(5), default='es')
+    moneda = db.Column(db.String(10), default='$')
     transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
 
 class Transaccion(db.Model):

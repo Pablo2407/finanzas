@@ -19,19 +19,6 @@
         input, select { background-color: #0f3460 !important; color: #eee !important; border: 1px solid #533483 !important; }
         input::placeholder { color: #aaa !important; }
     </style>
-
-<link rel="manifest" href="/static/manifest.json">
-<meta name="theme-color" content="#4CAF50">
-<link rel="apple-touch-icon" href="/static/icon-192.png">
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/static/sw.js')
-                .then(reg => console.log('SW registrado'))
-                .catch(err => console.log('SW error:', err));
-        });
-    }
-</script>
 </head>
 <body>
     <nav class="navbar navbar-dark px-3 py-3 mb-4">
@@ -50,7 +37,8 @@
                 <a href="/recurrentes" class="btn btn-outline-light btn-sm">📆 Recurrentes</a>
                 <a href="/buscar" class="btn btn-outline-light btn-sm">🔍 Buscar</a>
                 <a href="/metas" class="btn btn-outline-light btn-sm">🎯 Metas</a>
-                <a href="/reporte" class="btn btn-outline-light btn-sm">📊 Reporte PDF</a>
+                <a href="/reporte" class="btn btn-outline-light btn-sm">📊 PDF</a>
+                <a href="/moneda" class="btn btn-outline-light btn-sm">💱 Moneda</a>
                 <a href="/logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</a>
             </div>
         </div>
@@ -61,19 +49,19 @@
             <div class="col-12 mb-3">
                 <div class="card balance-card text-center p-4">
                     <h6 class="text-light opacity-75">Balance Total</h6>
-                    <h1 class="fw-bold text-white">${{ balance }}</h1>
+                    <h1 class="fw-bold text-white">{{ moneda }}{{ balance }}</h1>
                 </div>
             </div>
             <div class="col-6 col-md-3 mb-3">
                 <div class="card p-3 text-center">
                     <h6 class="text-secondary">💰 Ingresos del mes</h6>
-                    <h4 class="ingreso">${{ ingresos_mes }}</h4>
+                    <h4 class="ingreso">{{ moneda }}{{ ingresos_mes }}</h4>
                 </div>
             </div>
             <div class="col-6 col-md-3 mb-3">
                 <div class="card p-3 text-center">
                     <h6 class="text-secondary">💸 Gastos del mes</h6>
-                    <h4 class="gasto">${{ gastos_mes }}</h4>
+                    <h4 class="gasto">{{ moneda }}{{ gastos_mes }}</h4>
                 </div>
             </div>
             <div class="col-6 col-md-3 mb-3">
@@ -85,7 +73,7 @@
             <div class="col-6 col-md-3 mb-3">
                 <div class="card p-3 text-center">
                     <h6 class="text-secondary">📈 Mayor gasto</h6>
-                    <h4 class="gasto">${{ mayor_gasto }}</h4>
+                    <h4 class="gasto">{{ moneda }}{{ mayor_gasto }}</h4>
                 </div>
             </div>
         </div>
@@ -152,33 +140,33 @@
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>Monto</th>
-                            <th>Tipo</th>
-                            <th>Categoría</th>
-                            <th>Fecha</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for trans in transacciones %}
-                        <tr>
-                            <td>{{ trans.descripcion }}</td>
-                            <td class="{{ trans.tipo }}">${{ trans.monto }}</td>
-                            <td>{{ trans.tipo }}</td>
-                            <td>{{ trans.categoria }}</td>
-                            <td>{{ trans.fecha.strftime('%d/%m/%Y') }}</td>
-                            <td>
-                                <a href="/editar/{{ trans.id }}" class="btn btn-outline-light btn-sm">✏️</a>
-                                <a href="/eliminar/{{ trans.id }}" onclick="return confirm('¿Seguro que quieres eliminar?')" class="btn btn-outline-danger btn-sm">🗑️</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Monto</th>
+                        <th>Tipo</th>
+                        <th>Categoría</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trans in transacciones %}
+                    <tr>
+                        <td>{{ trans.descripcion }}</td>
+                        <td class="{{ trans.tipo }}">{{ moneda }}{{ trans.monto }}</td>
+                        <td>{{ trans.tipo }}</td>
+                        <td>{{ trans.categoria }}</td>
+                        <td>{{ trans.fecha.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <a href="/editar/{{ trans.id }}" class="btn btn-outline-light btn-sm">✏️</a>
+                            <a href="/eliminar/{{ trans.id }}" onclick="return confirm('¿Seguro que quieres eliminar?')" class="btn btn-outline-danger btn-sm">🗑️</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
             </div>
         </div>
     </div>
