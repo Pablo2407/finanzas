@@ -39,6 +39,8 @@
                 <a href="/metas" class="btn btn-outline-light btn-sm">🎯 Metas</a>
                 <a href="/reporte" class="btn btn-outline-light btn-sm">📊 PDF</a>
                 <a href="/moneda" class="btn btn-outline-light btn-sm">💱 Moneda</a>
+                <button onclick="suscribirNotificaciones()" class="btn btn-outline-warning btn-sm">🔔 Notificaciones</button>
+                <a href="/notificacion/test" class="btn btn-outline-warning btn-sm">🔔 Probar</a>
                 <a href="/logout" class="btn btn-outline-danger btn-sm">Cerrar sesión</a>
             </div>
         </div>
@@ -192,5 +194,25 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const vapidPublicKey = '{{ config.VAPID_PUBLIC_KEY }}';
+
+        async function suscribirNotificaciones() {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                const registro = await navigator.serviceWorker.ready;
+                const suscripcion = await registro.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: vapidPublicKey
+                });
+                await fetch('/suscribir', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(suscripcion)
+                });
+                alert('¡Notificaciones activadas!');
+            }
+        }
+    </script>
 </body>
 </html>
