@@ -1,7 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
+from extensions import db
 from flask_login import UserMixin
 
-db = SQLAlchemy()
+
 
 class Usuario(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
