@@ -58,10 +58,31 @@ def login():
     if request.method == 'POST':
         usuario = Usuario.query.filter_by(username=request.form['username']).first()
         if usuario and check_password_hash(usuario.password, request.form['password']):
+            if usuario.otp_activo:
+                from flask import session
+                session['usuario_pendiente'] = usuario.id
+                return redirect(url_for('auth.verificar_login_2fa'))
             login_user(usuario)
             return redirect(url_for('finanzas.index'))
         flash('Usuario o contraseña incorrectos')
     return render_template('login.html')
+
+@auth.route('/login/2fa', methods=['GET', 'POST'])
+def verificar_login_2fa():
+    from flask import session
+    import pyotp
+    if 'usuario_pendiente' not in session:
+        return redirect(url_for('auth.login'))
+    if request.method == 'POST':
+        usuario = Usuario.query.get(session['usuario_pendiente'])
+        codigo = request.form['codigo']
+        totp = pyotp.TOTP(usuario.otp_secret)
+        if totp.verify(codigo):
+            session.pop('usuario_pendiente')
+            login_user(usuario)
+            return redirect(url_for('finanzas.index'))
+        flash('Código incorrecto')
+    return render_template('2fa_login.html')
 
 @auth.route('/logout')
 @login_required

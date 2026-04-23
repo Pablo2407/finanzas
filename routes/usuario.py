@@ -94,3 +94,49 @@ def guardar_presupuesto():
                 db.session.add(nuevo)
     db.session.commit()
     return redirect(url_for('usuario.presupuesto'))
+
+@usuario.route('/2fa/activar')
+@login_required
+def activar_2fa():
+    import pyotp
+    import qrcode
+    import io
+    import base64
+
+    if not current_user.otp_secret:
+        current_user.otp_secret = pyotp.random_base32()
+        db.session.commit()
+
+    totp = pyotp.TOTP(current_user.otp_secret)
+    uri = totp.provisioning_uri(current_user.email, issuer_name='Mis Finanzas')
+
+    qr = qrcode.make(uri)
+    buffer = io.BytesIO()
+    qr.save(buffer, format='PNG')
+    buffer.seek(0)
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    return render_template('2fa_activar.html', qr=qr_base64, secret=current_user.otp_secret)
+
+@usuario.route('/2fa/verificar', methods=['POST'])
+@login_required
+def verificar_2fa():
+    import pyotp
+    codigo = request.form['codigo']
+    totp = pyotp.TOTP(current_user.otp_secret)
+    if totp.verify(codigo):
+        current_user.otp_activo = True
+        db.session.commit()
+        flash('2FA activado exitosamente')
+    else:
+        flash('Código incorrecto, intenta de nuevo')
+    return redirect(url_for('usuario.activar_2fa'))
+
+@usuario.route('/2fa/desactivar')
+@login_required
+def desactivar_2fa():
+    current_user.otp_activo = False
+    current_user.otp_secret = None
+    db.session.commit()
+    flash('2FA desactivado')
+    return redirect(url_for('usuario.perfil'))

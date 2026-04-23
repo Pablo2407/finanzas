@@ -10,6 +10,9 @@ class Usuario(db.Model, UserMixin):
     password = db.Column(db.String(200), nullable=False)
     idioma = db.Column(db.String(5), default='es')
     moneda = db.Column(db.String(10), default='$')
+    push_suscripcion = db.Column(db.Text, nullable=True)
+    otp_secret = db.Column(db.String(32), nullable=True)
+    otp_activo = db.Column(db.Boolean, default=False)
     transacciones = db.relationship('Transaccion', backref='usuario', lazy=True)
 
 class Transaccion(db.Model):
