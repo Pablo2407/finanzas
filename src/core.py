@@ -1,14 +1,14 @@
-from flask import Flask
-from config import get_config
-from extensions import db, login_manager, mail, limiter
-from models import Usuario
-from routes.auth import auth
-from routes.finanzas import finanzas
-from routes.usuario import usuario
-from routes.extras import extras
+"""
+Core de la aplicación Flask
+"""
+from flask import Flask, render_template
+from .config import get_config
+from .extensions import db, login_manager, mail, limiter
+from .models import Usuario
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+
 
 def setup_logging(app):
     """Configurar logging de la aplicación"""
@@ -27,10 +27,13 @@ def setup_logging(app):
         app.logger.setLevel(logging.INFO)
         app.logger.info('Aplicación de finanzas iniciada')
 
+
 def create_app():
-    app = Flask(__name__)
+    """Factory para crear la aplicación Flask"""
+    app = Flask(__name__, template_folder='../templates', static_folder='../static')
     app.config.from_object(get_config())
 
+    # Inicializar extensiones
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
@@ -44,7 +47,6 @@ def create_app():
     @app.errorhandler(429)
     def ratelimit_handler(e):
         app.logger.warning(f'Rate limit excedido: {e.description}')
-        from flask import render_template
         return render_template('rate_limit_error.html', error=str(e.description)), 429
 
     @login_manager.user_loader
@@ -58,22 +60,28 @@ def create_app():
             return dict(moneda=current_user.moneda)
         return dict(moneda='$')
 
+    # Registrar blueprints
+    from ..routes.auth import auth
+    from ..routes.finanzas import finanzas
+    from ..routes.usuario import usuario
+    from ..routes.extras import extras
+    
     app.register_blueprint(auth)
     app.register_blueprint(finanzas)
     app.register_blueprint(usuario)
     app.register_blueprint(extras)
 
+    # Crear tablas de BD
     with app.app_context():
         db.create_all()
+    
+    # Ruta de landing
+    @app.route('/landing')
+    def landing():
+        return render_template('landing.html')
 
     return app
 
+
+# Crear instancia de la aplicación
 app = create_app()
-
-@app.route('/landing')
-def landing():
-    from flask import render_template
-    return render_template('landing.html')
-
-if __name__ == '__main__':
-    app.run(debug=True)
